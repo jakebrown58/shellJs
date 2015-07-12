@@ -1,21 +1,27 @@
-var shellJs = {};
+var shellJs = {}
 
-shellJs.init = function () {
-  if(document && document.getElementById) {
-    var display = document.getElementById('display');
-    shellJs.width = display.width = window.innerWidth - 40;
-    shellJs.height = display.height = window.innerHeight - 30;
-    shellJs.halfWidth = shellJs.width * 0.5;
-    shellJs.halfHeight = shellJs.height * 0.5;
-    shellJs.txtOffset = 50;
-    shellJs.lineHeight = 10;
-    shellJs.ctx = display.getContext('2d');
-    display.focus();
-    shellJs.eventListener = display;
-    shellJs.eventListener.addEventListener('keydown', shellJs.onKeyDown);
-  } 
-
+shellJs.init = function (display, onExit, userCommands) {
+  shellJs.display = display;
+  shellJs.width = display.width;
+  shellJs.height = display.height;
+  shellJs.halfWidth = shellJs.width * 0.5;
+  shellJs.halfHeight = shellJs.height * 0.5;
+  shellJs.txtOffset = 50;
+  shellJs.lineHeight = 10;
+  shellJs.ctx = display.getContext('2d');
+  display.focus();
+  shellJs.eventListener = display;
+  shellJs.eventListener.addEventListener('keydown', shellJs.onKeyDown);
   shellJs.render();
+  shellJs.afterExit = onExit;
+  shellJs.shouldRender = true;
+  shellJs.userCommands = userCommands;
+
+  if(shellJs.userCommands) {
+    shellJs.commands = shellJs.reservedCommands.concat(shellJs.userCommands);
+  } else {
+    shellJs.commands = shellJs.reservedCommands;
+  }
 };
 
 shellJs.render = function() {
@@ -47,7 +53,10 @@ shellJs.onKeyDown = function(e) {
   } else {
     shellJs.buffer += String.fromCharCode(e.keyCode);
   }
-  shellJs.render();
+
+  if(shellJs.shouldRender) {
+    shellJs.render();
+  }
 
   if(!prop) {
     e.preventDefault();
@@ -84,7 +93,6 @@ shellJs.clearScreen = function() {
 }
 
 shellJs.onHelpCommand = function() {
-  //shellJs.ctx.fillText("HELP", 10, 100);
   var startY = 100,
     x,
     txt;
@@ -95,26 +103,53 @@ shellJs.onHelpCommand = function() {
   }
 }
 
+var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+var ARGUMENT_NAMES = /([^\s,]+)/g;
+
+// shellJs.onArgsCommand = function() {
+//   //cmdP.ctx.fillText("HELP", 10, 100);
+//   var startY = 100,
+//     x,
+//     txt;
+
+//   for(x = 0; x < cmdP.commands.length; x++) {
+//     txt = cmdP.commands[x].command.toUpperCase() + " :  " + cmdP.commands[x].description;
+// //+ " ... arguments: " + getParamNames(cmdP.commands[x].fn) + " ... body: " + cmdP.commands[x].fn.toString()          
+//     cmdP.ctx.fillText(txt, 10, startY + x * 10);
+//   }
+// }
+
+shellJs.getParamNames = function(func) {
+  var fnStr = func.toString().replace(STRIP_COMMENTS, '');
+  var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+  if(result === null)
+     result = [];
+  return result;
+}      
+
+
 shellJs.onClearCommand = function() {
   shellJs.clearScreen();
 }
 
-
-shellJs.onTimes = function(x, y) {
-  shellJs.ctx.fillText(x * y, 50, 100);
+shellJs.onExit = function() {
+  shellJs.shouldRender = false;
+  shellJs.eventListener.removeEventListener('keydown', shellJs.onKeyDown);
+  shellJs.ctx.clearRect(0, 10, shellJs.width, 60);
+  shellJs.afterExit();
 }
 
-shellJs.commands = [
+
+shellJs.reservedCommands = [
   {command: "help", description: "find out commands", fn: shellJs.onHelpCommand},
   {command: "clear", description: "clear the screen", fn: shellJs.onClearCommand},
-  {command: "times", description: "do something x times", fn: shellJs.onTimes},
+  {command: "exit", description: "exit command mode", fn: shellJs.onExit}
 ];
 
-
-
-
+shellJs.display;
 shellJs.cmdPrompt = "> ";
 shellJs.prevInx = 0;
 shellJs.prev = [];
 shellJs.buffer = "";
-shellJs.init();
+shellJs.shouldRender = true;
+

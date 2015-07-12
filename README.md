@@ -5,6 +5,7 @@ shell.Js
 
 Micro Library for getting a shell-like experience in the browser via canvas.
 
+v .02 - hooks for wire-up into other applications.  (and unwiring when done).
 v .01 - very basic support for 'help', executing functions with parameters, and recall of previous commands.
 
 ## Why
@@ -19,7 +20,7 @@ pass an array of actions, with the form:
 	{command: 'name', description: 'help text', fn: function}
 
 
-## Core goals
+## Goals
 
-Discoverability is critical.
-Usability is important.
+Discoverability
+Usability
